@@ -25,14 +25,14 @@ ct_t = {'C_tilde': GT, 'C': G1, 'Cy': G1, 'Cyp': G2}
 debug = False
 
 
-class CPabe_YLLC15(ABEnc):
+class YLLC15(ABEnc):
     """
     Possibly a subclass of BSW07?
     """
-    def __init__(self, groupObj):
+    def __init__(self, group):
         ABEnc.__init__(self)
-        self.util = SecretUtil(groupObj, verbose=False)
-        self.group = groupObj
+        self.util = SecretUtil(group, verbose=False)
+        self.group = group
 
     @Output(pk_t, mk_t)
     def setup(self):
@@ -48,7 +48,7 @@ class CPabe_YLLC15(ABEnc):
 
         pk = {'g': g, 'g2': gp, 'h': h, 'f': f, 'e_gg_alpha': e_gg_alpha}
         mk = {'beta': beta, 'alpha': alpha}
-        return (pk, mk)
+        return pk, mk
 
     def ukgen(self, params, user_id):
         # ripped from pkenc_elgamal85.py

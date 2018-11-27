@@ -1,14 +1,14 @@
 import unittest
 
-from charm.schemes.abenc.abenc_yllc15 import CPabe_YLLC15
+from charm.schemes.abenc.abenc_yllc15 import YLLC15
 from charm.toolbox.pairinggroup import PairingGroup
 
 
-class CPabe_YLLC15Test(unittest.TestCase):
+class YLLC15Test(unittest.TestCase):
 
     def setUp(self):
         group = PairingGroup('SS512')
-        self.cpabe_scheme = CPabe_YLLC15(group)
+        self.cpabe_scheme = YLLC15(group)
 
     def test_setup(self):
         (params, msk) = self.cpabe_scheme.setup()
