@@ -13,6 +13,7 @@
 :Date:       11/2018
 '''
 from charm.toolbox.ABEnc import ABEnc, Output
+from charm.toolbox.msp import MSP
 from charm.toolbox.pairinggroup import ZR, G1, G2, GT, pair
 from charm.toolbox.secretutil import SecretUtil
 
@@ -31,8 +32,8 @@ class YLLC15(ABEnc):
     """
     def __init__(self, group):
         ABEnc.__init__(self)
-        self.util = SecretUtil(group, verbose=False)
         self.group = group
+        self.util = MSP(self.group, verbose=False)
 
     @Output(pk_t, mk_t)
     def setup(self):
@@ -76,3 +77,41 @@ class YLLC15(ABEnc):
             k_attrs[attr] = (k_attr1, k_attr2)
 
         return {'k': k, 'k_prime': k_prime, 'k_attrs': k_attrs}
+
+    def encrypt(self, params, msg, policy_str):
+        """
+         Encrypt a message M under a policy string.
+        """
+        policy = self.util.createPolicy(policy_str)
+        mono_span_prog = self.util.convert_policy_to_msp(policy)
+        num_cols = self.util.len_longest_row
+
+        # pick randomness
+        u = []
+        for i in range(num_cols):
+            rand = self.group.random(ZR)
+            u.append(rand)
+        s = u[0]    # shared secret
+
+        C = (params['e_gg_alpha'] ** s) * msg
+        C_prime = params['h'] ** s
+        C_prime_prime = params['g'] ** s
+
+        c_attrs = {}
+        for attr, row in mono_span_prog.items():
+            cols = len(row)
+            sum = 0
+            for i in range(cols):
+                sum += row[i] * u[i]
+            attr_stripped = self.util.strip_index(attr)
+            c_i1 = params['g2'] ** sum
+            c_i2 = self.group.hash(str(attr_stripped), G1) ** sum
+            c_attrs[attr] = (c_i1, c_i2)
+
+        ciphertext = {'policy': policy,
+                      'C': C,
+                      'C_prime': C_prime,
+                      'C_prime_prime': C_prime_prime,
+                      'c_attrs': c_attrs}
+        return ciphertext
+
