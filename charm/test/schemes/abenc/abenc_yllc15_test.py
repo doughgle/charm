@@ -26,6 +26,36 @@ class YLLC15Test(unittest.TestCase):
         ciphertext = self.cpabe_scheme.encrypt(self.params, random_key_elem, pol)
         assert ciphertext != random_key_elem
 
+    def test_policy_not_satisfied(self):
+        cipher = self.cpabe_scheme
+
+        pkcs, skcs = self.cpabe_scheme.ukgen(self.params, "aws@amazonaws.com")
+        pku, sku = self.cpabe_scheme.ukgen(self.params, "alice@example.com")
+        attribute_list = "A"
+        proxy_key_user = self.cpabe_scheme.proxy_keygen(self.params, self.msk, pkcs, pku, attribute_list)
+
+        random_key_elem = self.cpabe_scheme.group.random(GT)
+        pol = 'A and B'
+        ciphertext = cipher.encrypt(self.params, random_key_elem, pol)
+
+        self.assertFalse(cipher.proxy_decrypt(self.params, skcs, proxy_key_user, ciphertext))
+
+    def test_encrypt_proxy_decrypt_decrypt_round_trip(self):
+        cipher = self.cpabe_scheme
+
+        pkcs, skcs = self.cpabe_scheme.ukgen(self.params, "aws@amazonaws.com")
+        pku, sku = self.cpabe_scheme.ukgen(self.params, "alice@example.com")
+        attribute_list = "A"
+        proxy_key_user = self.cpabe_scheme.proxy_keygen(self.params, self.msk, pkcs, pku, attribute_list)
+
+        random_key_elem = self.cpabe_scheme.group.random(GT)
+        pol = '(A)'
+        ciphertext = cipher.encrypt(self.params, random_key_elem, pol)
+
+        intermediate_value = cipher.proxy_decrypt(self.params, skcs, proxy_key_user, ciphertext)
+        recovered_key_elem = cipher.decrypt(self.params, sku, intermediate_value)
+        self.assertEqual(random_key_elem, recovered_key_elem)
+
 
 if __name__ == "__main__":
     unittest.main()

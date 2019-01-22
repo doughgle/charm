@@ -15,7 +15,6 @@
 from charm.toolbox.ABEnc import ABEnc, Output
 from charm.toolbox.msp import MSP
 from charm.toolbox.pairinggroup import ZR, G1, G2, GT, pair
-from charm.toolbox.secretutil import SecretUtil
 
 # type annotations
 pk_t = {'g': G1, 'g2': G2, 'h': G1, 'f': G1, 'e_gg_alpha': GT}
@@ -115,3 +114,43 @@ class YLLC15(ABEnc):
                       'c_attrs': c_attrs}
         return ciphertext
 
+    def proxy_decrypt(self, params, skcs, proxy_key_user, ciphertext):
+        policy_root_node = ciphertext['policy']
+        k_attrs = proxy_key_user['k_attrs']
+        nodes = self.util.prune(policy_root_node, k_attrs)
+        if not nodes:
+            print ("Policy not satisfied.")
+            return None
+
+        prod = 1
+
+        for node in nodes:
+            attr = node.getAttributeAndIndex()
+            attr_stripped = self.util.strip_index(attr)
+            (c_attr1, c_attr2) = ciphertext['c_attrs'][attr]
+            (k_attr1, k_attr2) = proxy_key_user['k_attrs'][attr_stripped]
+            prod *= (pair(k_attr1, c_attr1) / pair(c_attr2, k_attr2))
+
+        f_rt = 1
+
+        k = proxy_key_user['k']
+        c_prime = ciphertext['C_prime']
+        e_k_c_prime = pair(k, c_prime)
+
+        k_prime = proxy_key_user['k_prime']
+        c_prime_prime = ciphertext['C_prime_prime']
+        denominator = (pair(k_prime, c_prime_prime) ** skcs) * f_rt
+
+        user_e_term = e_k_c_prime / denominator
+
+        intermediate_value = { 'C': ciphertext['C'],
+                               'e_term': user_e_term}
+
+        return intermediate_value
+
+    def decrypt(self, params, sku, intermediate_value):
+        ciphertext = intermediate_value['C']
+        e_term = intermediate_value['e_term']
+        denominator = e_term ** (sku ** -1)
+        msg = ciphertext / denominator
+        return msg
