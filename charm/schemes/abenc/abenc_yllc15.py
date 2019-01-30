@@ -12,8 +12,10 @@
 :Authors:    D Hellinger
 :Date:       11/2018
 '''
+
 from charm.toolbox.ABEnc import ABEnc, Output
 from charm.toolbox.msp import MSP
+from charm.toolbox.node import BinNode
 from charm.toolbox.pairinggroup import ZR, G1, G2, GT, pair
 
 # type annotations
@@ -80,6 +82,8 @@ class YLLC15(ABEnc):
     def encrypt(self, params, msg, policy_str):
         """
          Encrypt a message M under a policy string.
+
+         policy_str must use parentheses e.g. (A) and (B)
         """
         policy = self.util.createPolicy(policy_str)
         mono_span_prog = self.util.convert_policy_to_msp(policy)
@@ -119,7 +123,7 @@ class YLLC15(ABEnc):
         k_attrs = proxy_key_user['k_attrs']
         nodes = self.util.prune(policy_root_node, k_attrs)
         if not nodes:
-            print ("Policy not satisfied.")
+            print("Policy not satisfied.")
             return None
 
         prod = 1
@@ -143,8 +147,8 @@ class YLLC15(ABEnc):
 
         user_e_term = e_k_c_prime / denominator
 
-        intermediate_value = { 'C': ciphertext['C'],
-                               'e_term': user_e_term}
+        intermediate_value = {'C': ciphertext['C'],
+                              'e_term': user_e_term}
 
         return intermediate_value
 
@@ -154,3 +158,26 @@ class YLLC15(ABEnc):
         denominator = e_term ** (sku ** -1)
         msg = ciphertext / denominator
         return msg
+
+
+def decrypt_node(node: BinNode, proxy_key_user, ciphertext):
+    sn = set()
+    attr = node.getAttribute()
+    if attr:
+        if attr not in proxy_key_user['k_attrs']:
+            return None
+        else:
+            (k_attr1, k_attr2) = proxy_key_user['k_attrs'][attr]
+            (c_attr1, c_attr2) = ciphertext['c_attrs'][attr]
+            fn = pair(k_attr1, c_attr1) / pair(k_attr2, c_attr2)
+            return fn
+    else:
+        fch_l = decrypt_node(node.left, proxy_key_user, ciphertext)
+        fch_r = decrypt_node(node.right, proxy_key_user, ciphertext)
+        if fch_l:
+            sn.add(fch_l)
+        if fch_r:
+            sn.add(fch_r)
+
+        if not sn:
+            return None

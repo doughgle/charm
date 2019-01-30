@@ -1,6 +1,6 @@
 import unittest
 
-from charm.schemes.abenc.abenc_yllc15 import YLLC15
+from charm.schemes.abenc.abenc_yllc15 import YLLC15, decrypt_node
 from charm.toolbox.pairinggroup import PairingGroup, GT
 
 
@@ -55,6 +55,38 @@ class YLLC15Test(unittest.TestCase):
         intermediate_value = cipher.proxy_decrypt(self.params, skcs, proxy_key_user, ciphertext)
         recovered_key_elem = cipher.decrypt(self.params, sku, intermediate_value)
         self.assertEqual(random_key_elem, recovered_key_elem)
+
+    def test_decrypt_leaf_node_base_case_policy_not_satisfied(self):
+        cipher = self.cpabe_scheme
+
+        random_key_elem = self.cpabe_scheme.group.random(GT)
+        pol = 'A'
+        ciphertext = cipher.encrypt(self.params, random_key_elem, pol)
+        root_node = ciphertext['policy']
+
+        attribute_list = "B"
+        pkcs, skcs = self.cpabe_scheme.ukgen(self.params, "aws@amazonaws.com")
+        pku, sku = self.cpabe_scheme.ukgen(self.params, "alice@example.com")
+        proxy_key_user = self.cpabe_scheme.proxy_keygen(self.params, self.msk, pkcs, pku, attribute_list)
+
+        result = decrypt_node(root_node, proxy_key_user, ciphertext)
+        self.assertIsNone(result)
+
+    def test_decrypt_non_leaf_node_policy_not_satisfied(self):
+        cipher = self.cpabe_scheme
+
+        random_key_elem = self.cpabe_scheme.group.random(GT)
+        pol = '(A) and (B)'
+        ciphertext = cipher.encrypt(self.params, random_key_elem, pol)
+        root_node = ciphertext['policy']
+
+        pkcs, skcs = self.cpabe_scheme.ukgen(self.params, "aws@amazonaws.com")
+        pku, sku = self.cpabe_scheme.ukgen(self.params, "alice@example.com")
+        attribute_list = "B"
+        proxy_key_user = self.cpabe_scheme.proxy_keygen(self.params, self.msk, pkcs, pku, attribute_list)
+
+        result = decrypt_node(root_node, proxy_key_user, ciphertext)
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":
