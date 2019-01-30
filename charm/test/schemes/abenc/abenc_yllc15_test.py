@@ -1,7 +1,10 @@
 import unittest
 
+from hypothesis import given
+
 from charm.schemes.abenc.abenc_yllc15 import YLLC15, decrypt_node
 from charm.toolbox.pairinggroup import PairingGroup, GT
+from charm.toolbox.policy_expression_spec import attributes
 
 
 class YLLC15Test(unittest.TestCase):
@@ -14,11 +17,12 @@ class YLLC15Test(unittest.TestCase):
     def test_ukgen(self, user_id='bob@example.com'):
         (public_key, secret_key) = self.abe.ukgen(self.params, user_id)
 
-    def test_proxy_key_gen(self):
+    @given(attrs=attributes())
+    def test_proxy_key_gen(self, attrs):
         pkcs, skcs = self.abe.ukgen(self.params, "aws@amazonaws.com")
         pku, sku = self.abe.ukgen(self.params, "alice@example.com")
-        attribute_list = "A"
-        proxy_key_user = self.abe.proxy_keygen(self.params, self.msk, pkcs, pku, attribute_list)
+        proxy_key_user = self.abe.proxy_keygen(self.params, self.msk, pkcs, pku, attrs)
+        self.assertEqual(set(attrs), proxy_key_user['k_attrs'].keys())
 
     def test_encrypt_proxy_decrypt_decrypt_round_trip(self):
         pkcs, skcs = self.abe.ukgen(self.params, "aws@amazonaws.com")
