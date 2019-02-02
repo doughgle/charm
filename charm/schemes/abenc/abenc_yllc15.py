@@ -120,22 +120,9 @@ class YLLC15(ABEnc):
 
     def proxy_decrypt(self, params, skcs, proxy_key_user, ciphertext):
         policy_root_node = ciphertext['policy']
-        k_attrs = proxy_key_user['k_attrs']
-        nodes = self.util.prune(policy_root_node, k_attrs)
-        if not nodes:
-            print("Policy not satisfied.")
+        f_rt = decrypt_node(policy_root_node, proxy_key_user, ciphertext)
+        if not f_rt:
             return None
-
-        prod = 1
-
-        for node in nodes:
-            attr = node.getAttributeAndIndex()
-            attr_stripped = self.util.strip_index(attr)
-            (c_attr1, c_attr2) = ciphertext['c_attrs'][attr]
-            (k_attr1, k_attr2) = proxy_key_user['k_attrs'][attr_stripped]
-            prod *= (pair(k_attr1, c_attr1) / pair(c_attr2, k_attr2))
-
-        f_rt = 1
 
         k = proxy_key_user['k']
         c_prime = ciphertext['C_prime']
@@ -181,3 +168,6 @@ def decrypt_node(node: BinNode, proxy_key_user, ciphertext):
 
         if not sn:
             return None
+
+        fn = 1
+        return fn
