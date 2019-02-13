@@ -1,4 +1,5 @@
 '''
+Yanjiang Yang, Joseph K Liu, Kaitai Liang, Kim Kwang Raymond Choo, Jianying Zhou
 
 | From: "Extended Proxy-Assisted Approach: Achieving Revocable Fine-Grained Encryption of Cloud Data".
 | Published in: 2015
