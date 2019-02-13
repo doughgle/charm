@@ -162,9 +162,9 @@ def decrypt_node(node: BinNode, proxy_key_user, ciphertext):
         fch_l = decrypt_node(node.left, proxy_key_user, ciphertext)
         fch_r = decrypt_node(node.right, proxy_key_user, ciphertext)
         if fch_l:
-            sn.add(fch_l)
+            sn.add(node.left)
         if fch_r:
-            sn.add(fch_r)
+            sn.add(node.right)
 
         if not sn:
             return None
