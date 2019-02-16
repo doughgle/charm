@@ -102,7 +102,7 @@ class YLLC15(ABEnc):
             c_i2 = self.group.hash(attr_stripped, G2) ** shares[attr]
             c_attrs[attr] = (c_i1, c_i2)
 
-        ciphertext = {'policy': policy,
+        ciphertext = {'policy_str': policy_str,
                       'C': C,
                       'C_prime': C_prime,
                       'C_prime_prime': C_prime_prime,
@@ -110,23 +110,32 @@ class YLLC15(ABEnc):
         return ciphertext
 
     def proxy_decrypt(self, params, skcs, proxy_key_user, ciphertext):
-        policy_root_node = ciphertext['policy']
-        f_rt = decrypt_node(policy_root_node, proxy_key_user, ciphertext)
-        if not f_rt:
-            return None
-
+        policy_root_node = ciphertext['policy_str']
         k = proxy_key_user['k']
-        c_prime = ciphertext['C_prime']
-        e_k_c_prime = pair(k, c_prime)
-
         k_prime = proxy_key_user['k_prime']
+        c_prime = ciphertext['C_prime']
         c_prime_prime = ciphertext['C_prime_prime']
-        denominator = (pair(k_prime, c_prime_prime) ** skcs) * f_rt
+        c_attrs = ciphertext['c_attrs']
+        k_attrs = proxy_key_user['k_attrs']
 
-        user_e_term = e_k_c_prime / denominator
+        policy = self.util.createPolicy(policy_root_node)
+        attributes = proxy_key_user['k_attrs'].keys()
+        pruned_list = self.util.prune(policy, attributes)
+        if pruned_list == False:
+            return False
+        z = self.util.getCoefficients(policy)
+        # reconstitute the policy random secret (A) which was used to encrypt the message
+        A = 1
+        for i in pruned_list:
+            attr = i.getAttributeAndIndex();
+            A *= (pair(c_attrs[attr][0], k_attrs[attr][0]) / pair(k_attrs[attr][1], c_attrs[attr][1])) ** z[attr]
+
+        e_k_c_prime = pair(k, c_prime)
+        denominator = (pair(k_prime, c_prime_prime) ** skcs) * A
+        encrypted_element_for_user_pkenc_scheme = e_k_c_prime / denominator
 
         intermediate_value = {'C': ciphertext['C'],
-                              'e_term': user_e_term}
+                              'e_term': encrypted_element_for_user_pkenc_scheme}
 
         return intermediate_value
 
@@ -136,29 +145,3 @@ class YLLC15(ABEnc):
         denominator = e_term ** (sku ** -1)
         msg = ciphertext / denominator
         return msg
-
-
-def decrypt_node(node: BinNode, proxy_key_user, ciphertext):
-    sn = set()
-    attr = node.getAttribute()
-    if attr:
-        if attr not in proxy_key_user['k_attrs']:
-            return None
-        else:
-            (k_attr1, k_attr2) = proxy_key_user['k_attrs'][attr]
-            (c_attr1, c_attr2) = ciphertext['c_attrs'][attr]
-            fn = pair(k_attr1, c_attr1) / pair(k_attr2, c_attr2)
-            return fn
-    else:
-        fch_l = decrypt_node(node.left, proxy_key_user, ciphertext)
-        fch_r = decrypt_node(node.right, proxy_key_user, ciphertext)
-        if fch_l:
-            sn.add(node.left)
-        if fch_r:
-            sn.add(node.right)
-
-        if not sn:
-            return None
-
-        fn = 1
-        return fn

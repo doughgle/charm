@@ -2,7 +2,7 @@ import unittest
 
 from hypothesis import given
 
-from charm.schemes.abenc.abenc_yllc15 import YLLC15, decrypt_node
+from charm.schemes.abenc.abenc_yllc15 import YLLC15
 from charm.toolbox.pairinggroup import PairingGroup, GT
 from charm.toolbox.policy_expression_spec import attributes, policy_expressions
 
@@ -49,20 +49,6 @@ class YLLC15Test(unittest.TestCase):
         ciphertext = self.abe.encrypt(self.params, random_key_elem, policy)
 
         result = self.abe.proxy_decrypt(self.params, skcs, proxy_key_user, ciphertext)
-        self.assertIsNone(result)
-
-    @given(policy=policy_expressions())
-    def test_decrypt_leaf_node_base_case_policy_not_satisfied(self, policy):
-        random_key_elem = self.abe.group.random(GT)
-        ciphertext = self.abe.encrypt(self.params, random_key_elem, policy)
-        root_node = ciphertext['policy']
-
-        attribute_list = ["UNLIKELY_ATTRIBUTE_NAME"]
-        pkcs, skcs = self.abe.ukgen(self.params, "aws@amazonaws.com")
-        pku, sku = self.abe.ukgen(self.params, "alice@example.com")
-        proxy_key_user = self.abe.proxy_keygen(self.params, self.msk, pkcs, pku, attribute_list)
-
-        result = decrypt_node(root_node, proxy_key_user, ciphertext)
         self.assertIsNone(result)
 
 
