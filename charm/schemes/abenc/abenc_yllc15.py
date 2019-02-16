@@ -15,11 +15,12 @@ Yanjiang Yang, Joseph K Liu, Kaitai Liang, Kim Kwang Raymond Choo, Jianying Zhou
 '''
 
 from charm.toolbox.ABEnc import ABEnc, Output
-from charm.toolbox.msp import MSP
 from charm.toolbox.node import BinNode
 from charm.toolbox.pairinggroup import ZR, G1, G2, GT, pair
+from charm.toolbox.secretutil import SecretUtil
 
 # type annotations
+
 pk_t = {'g': G1, 'g2': G2, 'h': G1, 'f': G1, 'e_gg_alpha': GT}
 mk_t = {'beta': ZR, 'g2_alpha': G2}
 sk_t = {'D': G2, 'Dj': G2, 'Djp': G1, 'S': str}
@@ -35,7 +36,7 @@ class YLLC15(ABEnc):
     def __init__(self, group):
         ABEnc.__init__(self)
         self.group = group
-        self.util = MSP(self.group, verbose=False)
+        self.util = SecretUtil(self.group)
 
     @Output(pk_t, mk_t)
     def setup(self):
@@ -87,29 +88,18 @@ class YLLC15(ABEnc):
          policy_str must use parentheses e.g. (A) and (B)
         """
         policy = self.util.createPolicy(policy_str)
-        mono_span_prog = self.util.convert_policy_to_msp(policy)
-        num_cols = self.util.len_longest_row
-
-        # pick randomness
-        u = []
-        for i in range(num_cols):
-            rand = self.group.random(ZR)
-            u.append(rand)
-        s = u[0]    # shared secret
+        s = self.group.random(ZR)
+        shares = self.util.calculateSharesDict(s, policy)
 
         C = (params['e_gg_alpha'] ** s) * msg
         C_prime = params['h'] ** s
         C_prime_prime = params['g'] ** s
 
         c_attrs = {}
-        for attr, row in mono_span_prog.items():
-            cols = len(row)
-            sum = 0
-            for i in range(cols):
-                sum += row[i] * u[i]
+        for attr in shares.keys():
             attr_stripped = self.util.strip_index(attr)
-            c_i1 = params['g2'] ** sum
-            c_i2 = self.group.hash(str(attr_stripped), G1) ** sum
+            c_i1 = params['g'] ** shares[attr]
+            c_i2 = self.group.hash(attr_stripped, G2) ** shares[attr]
             c_attrs[attr] = (c_i1, c_i2)
 
         ciphertext = {'policy': policy,
