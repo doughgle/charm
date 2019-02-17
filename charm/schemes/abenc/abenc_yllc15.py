@@ -13,18 +13,28 @@ Yanjiang Yang, Joseph K Liu, Kaitai Liang, Kim Kwang Raymond Choo, Jianying Zhou
 :Authors:    D Hellinger
 :Date:       11/2018
 '''
+from typing import Dict
 
 from charm.toolbox.ABEnc import ABEnc, Output
-from charm.toolbox.node import BinNode
 from charm.toolbox.pairinggroup import ZR, G1, G2, GT, pair
+from charm.toolbox.schemebase import Input
 from charm.toolbox.secretutil import SecretUtil
 
 # type annotations
 
 pk_t = {'g': G1, 'g2': G2, 'h': G1, 'f': G1, 'e_gg_alpha': GT}
-mk_t = {'beta': ZR, 'g2_alpha': G2}
-sk_t = {'D': G2, 'Dj': G2, 'Djp': G1, 'S': str}
-ct_t = {'C_tilde': GT, 'C': G1, 'Cy': G1, 'Cyp': G2}
+mk_t = {'beta': ZR, 'alpha': ZR}
+pk_u_t = G1
+sk_u_t = ZR
+sk_t = {'k': G1, 'k_prime': G1, 'k_attrs': Dict}
+ct_t = {'policy_str': str,
+        'C': GT,
+        'C_prime': G1,
+        'C_prime_prime': G1,
+        'c_attrs': Dict
+        }
+v_t = {'C': GT,
+       'e_term': GT}
 
 debug = False
 
@@ -54,21 +64,24 @@ class YLLC15(ABEnc):
         mk = {'beta': beta, 'alpha': alpha}
         return pk, mk
 
+    @Input(pk_t)
+    @Output(pk_u_t, sk_u_t)
     def ukgen(self, params, user_id):
         # ripped from pkenc_elgamal85.py
         # x is private, g is public param
         x = self.group.random(ZR)
 
         g = params['g']
-        pk = g ** x
-        sk = x
-        return pk, sk
+        pk_u = g ** x
+        sk_u = x
+        return pk_u, sk_u
 
+    @Input(pk_t, mk_t, pk_u_t, pk_u_t, [str])
+    # @Output(sk_t)
     def proxy_keygen(self, params, msk, pkcs, pku, attribute_list):
         r1 = self.group.random(ZR)
         r2 = self.group.random(ZR)
         g = params['g']
-        g2 = params['g2']
 
         k = ((pkcs ** r1) * (pku ** msk['alpha']) * (g ** r2)) ** ~msk['beta']
         k_prime = g ** r1
@@ -76,11 +89,13 @@ class YLLC15(ABEnc):
         for attr in attribute_list:
             r_attr = self.group.random(ZR)
             k_attr1 = (g ** r2) * (self.group.hash(str(attr), G1) ** r_attr)
-            k_attr2 = g2 ** r_attr
+            k_attr2 = g ** r_attr
             k_attrs[attr] = (k_attr1, k_attr2)
 
         return {'k': k, 'k_prime': k_prime, 'k_attrs': k_attrs}
 
+    @Input(pk_t, GT, str)
+    # @Output(ct_t)
     def encrypt(self, params, msg, policy_str):
         """
          Encrypt a message M under a policy string.
@@ -99,7 +114,7 @@ class YLLC15(ABEnc):
         for attr in shares.keys():
             attr_stripped = self.util.strip_index(attr)
             c_i1 = params['g'] ** shares[attr]
-            c_i2 = self.group.hash(attr_stripped, G2) ** shares[attr]
+            c_i2 = self.group.hash(attr_stripped, G1) ** shares[attr]
             c_attrs[attr] = (c_i1, c_i2)
 
         ciphertext = {'policy_str': policy_str,
@@ -109,6 +124,8 @@ class YLLC15(ABEnc):
                       'c_attrs': c_attrs}
         return ciphertext
 
+    # @Input(pk_t, sk_u_t, sk_t, ct_t)
+    @Output(v_t)
     def proxy_decrypt(self, params, skcs, proxy_key_user, ciphertext):
         policy_root_node = ciphertext['policy_str']
         k = proxy_key_user['k']
@@ -139,6 +156,8 @@ class YLLC15(ABEnc):
 
         return intermediate_value
 
+    @Input(pk_t, sk_u_t, v_t)
+    @Output(GT)
     def decrypt(self, params, sku, intermediate_value):
         ciphertext = intermediate_value['C']
         e_term = intermediate_value['e_term']

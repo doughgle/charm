@@ -27,7 +27,7 @@ class YLLC15Test(unittest.TestCase):
     def test_encrypt_proxy_decrypt_decrypt_round_trip(self):
         pkcs, skcs = self.abe.ukgen(self.params, "aws@amazonaws.com")
         pku, sku = self.abe.ukgen(self.params, "alice@example.com")
-        attribute_list = "A"
+        attribute_list = ["A"]
         proxy_key_user = self.abe.proxy_keygen(self.params, self.msk, pkcs, pku, attribute_list)
 
         random_key_elem = self.abe.group.random(GT)
