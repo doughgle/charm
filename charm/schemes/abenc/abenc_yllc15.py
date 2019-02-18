@@ -24,7 +24,7 @@ from charm.toolbox.secretutil import SecretUtil
 
 pk_t = {'g': G1, 'g2': G2, 'h': G1, 'e_gg_alpha': GT}
 mk_t = {'beta': ZR, 'alpha': ZR}
-pk_u_t = G1
+pk_u_t = G2
 sk_u_t = ZR
 sk_t = {'k': G1, 'k_prime': G1, 'k_attrs': Dict}
 ct_t = {'policy_str': str,
@@ -70,8 +70,8 @@ class YLLC15(ABEnc):
         # x is private, g is public param
         x = self.group.random(ZR)
 
-        g = params['g']
-        pk_u = g ** x
+        g2 = params['g2']
+        pk_u = g2 ** x
         sk_u = x
         return pk_u, sk_u
 
@@ -81,13 +81,14 @@ class YLLC15(ABEnc):
         r1 = self.group.random(ZR)
         r2 = self.group.random(ZR)
         g = params['g']
+        g2 = params['g2']
 
-        k = ((pkcs ** r1) * (pku ** msk['alpha']) * (g ** r2)) ** ~msk['beta']
-        k_prime = g ** r1
+        k = ((pkcs ** r1) * (pku ** msk['alpha']) * (g2 ** r2)) ** ~msk['beta']
+        k_prime = g2 ** r1
         k_attrs = {}
         for attr in attribute_list:
             r_attr = self.group.random(ZR)
-            k_attr1 = (g ** r2) * (self.group.hash(str(attr), G1) ** r_attr)
+            k_attr1 = (g2 ** r2) * (self.group.hash(str(attr), G2) ** r_attr)
             k_attr2 = g ** r_attr
             k_attrs[attr] = (k_attr1, k_attr2)
 
