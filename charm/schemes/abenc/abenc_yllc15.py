@@ -1,18 +1,18 @@
-'''
+"""
 Yanjiang Yang, Joseph K Liu, Kaitai Liang, Kim Kwang Raymond Choo, Jianying Zhou
 
 | From: "Extended Proxy-Assisted Approach: Achieving Revocable Fine-Grained Encryption of Cloud Data".
 | Published in: 2015
-| Available from: 
+| Available from:
 | Notes: adapted from BSW07
-| Security Assumption: 
+| Security Assumption:
 |
 | type:           ciphertext-policy attribute-based encryption
 | setting:
 
-:Authors:    D Hellinger
+:Authors:    Douglas Hellinger
 :Date:       11/2018
-'''
+"""
 from typing import Dict
 
 from charm.toolbox.ABEnc import ABEnc, Output
