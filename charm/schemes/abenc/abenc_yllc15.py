@@ -22,7 +22,7 @@ from charm.toolbox.secretutil import SecretUtil
 
 # type annotations
 
-pk_t = {'g': G1, 'g2': G2, 'h': G1, 'f': G1, 'e_gg_alpha': GT}
+pk_t = {'g': G1, 'g2': G2, 'h': G1, 'e_gg_alpha': GT}
 mk_t = {'beta': ZR, 'alpha': ZR}
 pk_u_t = G1
 sk_u_t = ZR
@@ -57,10 +57,9 @@ class YLLC15(ABEnc):
         gp.initPP()
 
         h = g ** beta
-        f = g ** ~beta
         e_gg_alpha = pair(g, gp ** alpha)
 
-        pk = {'g': g, 'g2': gp, 'h': h, 'f': f, 'e_gg_alpha': e_gg_alpha}
+        pk = {'g': g, 'g2': gp, 'h': h, 'e_gg_alpha': e_gg_alpha}
         mk = {'beta': beta, 'alpha': alpha}
         return pk, mk
 
