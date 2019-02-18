@@ -138,8 +138,8 @@ class YLLC15(ABEnc):
         policy = self.util.createPolicy(policy_root_node)
         attributes = proxy_key_user['k_attrs'].keys()
         pruned_list = self.util.prune(policy, attributes)
-        if pruned_list == False:
-            return False
+        if not pruned_list:
+            return None
         z = self.util.getCoefficients(policy)
         # reconstitute the policy random secret (A) which was used to encrypt the message
         A = 1

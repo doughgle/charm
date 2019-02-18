@@ -1,6 +1,7 @@
 import unittest
 
 from hypothesis import given
+from hypothesis.strategies import lists
 
 from charm.schemes.abenc.abenc_yllc15 import YLLC15
 from charm.toolbox.pairinggroup import PairingGroup, GT
@@ -17,7 +18,7 @@ class YLLC15Test(unittest.TestCase):
     def test_ukgen(self, user_id='bob@example.com'):
         (public_key, secret_key) = self.abe.ukgen(self.params, user_id)
 
-    @given(attrs=attributes())
+    @given(attrs=lists(attributes()))
     def test_proxy_key_gen(self, attrs):
         pkcs, skcs = self.abe.ukgen(self.params, "aws@amazonaws.com")
         pku, sku = self.abe.ukgen(self.params, "alice@example.com")
